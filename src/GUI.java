@@ -60,6 +60,7 @@ public class GUI extends JFrame {
 
 	TaskHandler taskHandler = new TaskHandler();
 	private JButton removeTaskButton;
+	private JButton editTaskPanelSwitch;
 	private JPanel contentPane;
 	private JTextField addTaskNameTextField;
 	private JTextField addCategoryTextField;
@@ -121,7 +122,7 @@ public class GUI extends JFrame {
 	public GUI() {
 		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 843, 558);
+		setBounds(100, 100, 800, 600);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
@@ -134,12 +135,12 @@ public class GUI extends JFrame {
 			}
 
 		});
-		logoButton.setBounds(0, 11, 166, 105);
+		logoButton.setBounds(0, 0, 292, 157);
 		contentPane.add(logoButton);
 		
 		JPanel functionButtonPanel = new JPanel();
 		functionButtonPanel.setBackground(new Color(0, 0, 128));
-		functionButtonPanel.setBounds(0, 168, 166, 351);
+		functionButtonPanel.setBounds(0, 168, 166, 393);
 		contentPane.add(functionButtonPanel);
 		functionButtonPanel.setLayout(new GridLayout(3, 1, 0, 0));
 		
@@ -154,22 +155,40 @@ public class GUI extends JFrame {
 		removeTaskButton = new JButton("Remove Task");
 		removeTaskButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				/*
+				int index = taskListVisual.getSelectedIndex();
+				if(index == -1) {
+				removeTaskButton.setEnabled(false);
+				} else {
+					removeTaskButton.setEnabled(true);
+					removeTaskButtonactionPerformed(e);
+				}
+				*/
 				removeTaskButtonactionPerformed(e);
 			}
 
 		});
 		functionButtonPanel.add(removeTaskButton);
 		
-		JButton editTaskPanelSwitch = new JButton("Edit Task");
+		editTaskPanelSwitch = new JButton("Edit Task");
 		editTaskPanelSwitch.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				/*
+				int index = taskListVisual.getSelectedIndex();
+				if(index == -1) {
+				editTaskPanelSwitch.setEnabled(false);
+				} else {
+					editTaskPanelSwitch.setEnabled(true);
+					editTaskPanelSwitchactionPerformed(e);
+				}
+				*/
 				editTaskPanelSwitchactionPerformed(e);
 			}			
 		});
 		functionButtonPanel.add(editTaskPanelSwitch);
 		
 		mainLayeredPane = new JLayeredPane();
-		mainLayeredPane.setBounds(176, 168, 641, 351);
+		mainLayeredPane.setBounds(176, 168, 608, 393);
 		contentPane.add(mainLayeredPane);
 		mainLayeredPane.setLayout(new CardLayout(0, 0));
 		
@@ -345,9 +364,9 @@ public class GUI extends JFrame {
 		for(int i = 0; i < taskHandler.getTasks().length(); i++) {
 			JSONObject temp = taskHandler.getTasks().getJSONObject(i);
 			model.addElement(
-					"<html><div style='border:2px solid black; margin-right: 0;'><<h1><b>" + temp.getString("name") + "</b></h1><div style='float:left; padding-right:1 rem;'>" + 
-					temp.getString("date") + " &nbsp;&nbsp; | &nbsp;&nbsp; " + temp.getString("start") + " - " + temp.getString("end") + "</div><p>" +
-					temp.getString("category") + "</p></div></html>"
+					"<html><div style='border:2px solid black; '><<h1><b>" + temp.getString("name") + "</b></h1><div >" + 
+					temp.getString("date") + " &nbsp;&nbsp; | &nbsp;&nbsp; " + temp.getString("start") + " - " + temp.getString("end") +"</div><p>" +
+					temp.getString("category") + "</p></div><!-- " + temp.getString("uuid") + " --></body></html>"
 					);
 		}
 	}
@@ -361,7 +380,9 @@ public class GUI extends JFrame {
 		// TODO Auto-generated method stub
 		switchPanels(mainLayeredPane, editTaskPane);
 		int index = taskListVisual.getSelectedIndex();
-		JSONObject toBeEdited = new JSONObject(taskListVisual.getSelectedValue());
+		String twoBeEdited = taskListVisual.getSelectedValue();
+		String uuid = twoBeEdited.substring(twoBeEdited.indexOf("<!--") + 5, twoBeEdited.indexOf("-->") - 1);
+		JSONObject toBeEdited = taskHandler.getTask(uuid);
 		editTaskNameTextField.setText(toBeEdited.getString("name"));
 		editDatePicker.setDate(LocalDate.parse(toBeEdited.getString("date"), DateTimeFormatter.ofPattern("MMMM d, yyyy")));
 		editStartTimePicker.setText(toBeEdited.getString("start"));
@@ -377,7 +398,10 @@ public class GUI extends JFrame {
 	private void addButtonactionPerformed(ActionEvent e) {
 		// TODO Auto-generated method stub
 		String uuid = taskHandler.addTask(addTaskNameTextField.getText(), addDatePicker.getText(), addStartTimePicker.getText(), addEndTimePicker.getText(), addCategoryTextField.getText());
-		model.addElement("<html><h1>" + taskHandler.getTask(uuid).toString() + "</h1></html>");
+		JSONObject temp = taskHandler.getTask(uuid);
+		model.addElement("<html><div style='border:2px solid black;'><<h1><b>" + temp.getString("name") + "</b></h1><div >" + 
+				temp.getString("date") + " &nbsp;&nbsp; | &nbsp;&nbsp; " + temp.getString("start") + " - " + temp.getString("end") + "</div><p>" +
+				temp.getString("category") + "</p></div><!-- " + temp.getString("uuid") + " --></body></html>");
 		addTaskNameTextField.setText("");
 		addStartTimePicker.clear();
 		addEndTimePicker.clear();
@@ -389,8 +413,9 @@ public class GUI extends JFrame {
 	private void removeTaskButtonactionPerformed(ActionEvent e) {
 		// TODO Auto-generated method stub
 		int index = taskListVisual.getSelectedIndex();
-		JSONObject toBeRemoved = new JSONObject(taskListVisual.getSelectedValue());
-		taskHandler.removeTask(toBeRemoved.getString("uuid"));
+		String toBeRemoved = taskListVisual.getSelectedValue();
+		String uuid = toBeRemoved.substring(toBeRemoved.indexOf("<!--") + 5, toBeRemoved.indexOf("-->") - 1);
+		taskHandler.removeTask(uuid);
 		model.removeElementAt(index);
 	}
 	
@@ -402,11 +427,15 @@ public class GUI extends JFrame {
 	private void editButtonactionPerformed(ActionEvent e) {
 		// TODO Auto-generated method stub
 		int index = taskListVisual.getSelectedIndex();
-		JSONObject toBeEdited = new JSONObject(taskListVisual.getSelectedValue());
-		String uuid = taskHandler.editTask(toBeEdited.getString("uuid"), editTaskNameTextField.getText(), editDatePicker.getText(), editStartTimePicker.getText(), editEndTimePicker.getText(), editCategoryTextField.getText() );
+		String toBeEdited = taskListVisual.getSelectedValue();
+		String oldUUID = toBeEdited.substring(toBeEdited.indexOf("<!--") + 5, toBeEdited.indexOf("-->") - 1);
+		String newUUID = taskHandler.editTask(oldUUID, editTaskNameTextField.getText(), editDatePicker.getText(), editStartTimePicker.getText(), editEndTimePicker.getText(), editCategoryTextField.getText() );
 		switchToTaskPanel(mainLayeredPane, taskScrollPane);
 		model.removeElementAt(index);
-		model.add(index, taskHandler.getTask(uuid).toString());
+		JSONObject temp = taskHandler.getTask(newUUID);
+		model.add(index, "<html><body style='margin-left: 0; margin-right: 0;'><div> style='border:2px solid black;'><<h1><b>" + temp.getString("name") + "</b></h1><div>" + 
+				temp.getString("date") + " &nbsp;&nbsp; | &nbsp;&nbsp; " + temp.getString("start") + " - " + temp.getString("end") +  "</div><p>" +
+				temp.getString("category") + "</p></div><!-- " + temp.getString("uuid") + " --></body></html>");
 	}
 	
 	private void logoButtonactionPerformed(ActionEvent e) {
